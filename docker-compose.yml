@@ -1,0 +1,19 @@
+version: "2"
+
+services:
+  storage:
+    image: openzipkin/zipkin-mysql
+    container_name: zipkin-playground-mysql
+    environment:
+      - MYSQL_HOST=mysql
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin-playground-zipkin
+    environment:
+      - STORAGE_TYPE=mysql
+      - MYSQL_HOST=zipkin-playground-mysql
+    ports:
+      - 9411:9411
+    depends_on:
+      - storage
