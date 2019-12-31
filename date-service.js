@@ -6,6 +6,7 @@ const { HttpLogger } = require("zipkin-transport-http");
 const zipkinMiddleware = require("zipkin-instrumentation-express").expressMiddleware;
 
 const ZIPKIN_ENDPOINT = process.env.ZIPKIN_ENDPOINT || "http://localhost:9411";
+const API_ENDPOINT = process.env.API_ENDPOINT || "http://localhost:3001";
 
 // Get ourselves a zipkin tracer
 const tracer = new Tracer({
