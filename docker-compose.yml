@@ -17,3 +17,23 @@ services:
       - 9411:9411
     depends_on:
       - storage
+
+  data-service:
+    build: ./data-service
+    ports:
+      - "3001:3001"
+    depends_on:
+      - zipkin
+
+  # auth-service:
+  #   build: ./auth-service
+  #   ports:
+  #     - "3002:3002"
+
+  web-service:
+    build: ./web-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - data-service
+      - zipkin

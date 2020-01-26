@@ -1,9 +1,5 @@
 const express = require("express");
 
-// Import axios and axios instrumentation
-const axios = require("axios");
-const zipkinInstrumentationAxios = require("zipkin-instrumentation-axios");
-
 // Import zipkin stuff
 const { Tracer, ExplicitContext, BatchRecorder, jsonEncoder } = require("zipkin");
 const { HttpLogger } = require("zipkin-transport-http");
@@ -21,28 +17,17 @@ const tracer = new Tracer({
       jsonEncoder: jsonEncoder.JSON_V2,
     }),
   }),
-  localServiceName: "web-service",
+  localServiceName: "date-service",
 });
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3002;
 
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
 
-// Add axios instrumentation
-const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: "axios-client" });
-
-// We use pug to render the template
-app.set("view engine", "pug");
-
-app.get("/", async (req, res, next) => {
-  try {
-    const result = await zipkinAxios.get(`${API_ENDPOINT}/time`);
-    res.render("index", { date: new Date(result.data.currentDate).toLocaleTimeString() });
-  } catch (error) {
-    next(error);
-  }
+app.get("/authorize", (req, res) => {
+  res.json({ authorized: true });
 });
 
-app.listen(port, () => console.log(`Web service listening on port ${port}`));
+app.listen(port, () => console.log(`Date service listening on port ${port}`));
