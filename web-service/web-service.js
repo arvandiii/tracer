@@ -33,16 +33,14 @@ const app = express();
 app.use(zipkinMiddleware({ tracer }));
 
 // Add axios instrumentation
-const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: "axios-client" });
+const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: `axios-client-${SERVICE_NAME}` });
 
 // We use pug to render the template
 app.set("view engine", "pug");
 
 app.get("/", async (req, res, next) => {
   try {
-    console.log('inja', `${AUTH_SERVICE_ENDPOINT}/auth`)
     const authResult = await zipkinAxios.get(`${AUTH_SERVICE_ENDPOINT}/auth`);
-    console.log('inja', authResult)
     if (!authResult.data.isAuthorized) {
       throw new Error("NOT_AUTHORIZED")
     }
