@@ -18,22 +18,41 @@ services:
     depends_on:
       - storage
 
-  data-service:
-    build: ./data-service
+  date-service:
+    build: ./date-service
     ports:
       - "3001:3001"
     depends_on:
       - zipkin
+    environment:
+      - ZIPKIN_ENDPOINT=http://zipkin:9411
+      - SERVICE_NAME=date-service
+      - PORT=3001
 
-  # auth-service:
-  #   build: ./auth-service
-  #   ports:
-  #     - "3002:3002"
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - zipkin
+      - date-service
+    environment:
+      - ZIPKIN_ENDPOINT=http://zipkin:9411
+      - SERVICE_NAME=auth-service
+      - DATE_SERVICE_ENDPOINT=http://date-service:3001
+      - PORT=3002
 
   web-service:
     build: ./web-service
     ports:
       - "3000:3000"
     depends_on:
-      - data-service
+      - date-service
       - zipkin
+      - auth-service
+    environment:
+      - ZIPKIN_ENDPOINT=http://zipkin:9411
+      - DATE_SERVICE_ENDPOINT=http://date-service:3001
+      - AUTH_SERVICE_ENDPOINT=http://auth-service:3002
+      - SERVICE_NAME=web-service
+      - PORT=3000

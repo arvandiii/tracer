@@ -7,4 +7,4 @@ COPY . .
 
 EXPOSE 3001
 
-CMD [ "pm2-runtime", "start", "data-service.js" ]
+CMD [ "pm2-runtime", "start", "date-service.js" ]
