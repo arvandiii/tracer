@@ -42,8 +42,8 @@ services:
       - DATE_SERVICE_ENDPOINT=http://date-service:3001
       - PORT=3002
 
-  web-service:
-    build: ./web-service
+  main-service:
+    build: ./main-service
     ports:
       - "3000:3000"
     depends_on:
@@ -54,5 +54,5 @@ services:
       - ZIPKIN_ENDPOINT=http://zipkin:9411
       - DATE_SERVICE_ENDPOINT=http://date-service:3001
       - AUTH_SERVICE_ENDPOINT=http://auth-service:3002
-      - SERVICE_NAME=web-service
+      - SERVICE_NAME=main-service
       - PORT=3000

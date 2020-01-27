@@ -28,7 +28,9 @@ const app = express();
 app.use(zipkinMiddleware({ tracer }));
 
 app.get("/time", (req, res) => {
-  res.json({ currentDate: new Date().getTime() });
+  res.json({
+    currentDate: new Date().getTime().toLocaleTimeString()
+  });
 });
 
 app.listen(PORT, () => console.log(`Date service listening on port ${PORT}`));

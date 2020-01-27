@@ -27,6 +27,8 @@ const tracer = new Tracer({
   localServiceName: SERVICE_NAME,
 });
 
+let delay = 100
+
 const app = express();
 
 // Add zipkin express middleware
@@ -35,20 +37,25 @@ app.use(zipkinMiddleware({ tracer }));
 // Add axios instrumentation
 const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: `axios-client-${SERVICE_NAME}` });
 
-// We use pug to render the template
-app.set("view engine", "pug");
-
-app.get("/", async (req, res, next) => {
-  try {
-    const authResult = await zipkinAxios.get(`${AUTH_SERVICE_ENDPOINT}/auth`);
-    if (!authResult.data.isAuthorized) {
-      throw new Error("NOT_AUTHORIZED")
+app.post("/api",  (req, res, next) => {
+  setTimeout(async function () {
+    const { pass } = req.body
+    try {
+      const authResult = await zipkinAxios.post(`${AUTH_SERVICE_ENDPOINT}/auth`, { pass });
+      if (!authResult.data.isAuthorized) {
+        throw new Error("NOT_AUTHORIZED")
+      }
+      const result = await zipkinAxios.get(`${DATE_SERVICE_ENDPOINT}/time`);
+      res.json({ delay, date: result.data.currentDate });
+    } catch (error) {
+      next(error);
     }
-    const result = await zipkinAxios.get(`${DATE_SERVICE_ENDPOINT}/time`);
-    res.render("index", { date: new Date(result.data.currentDate).toLocaleTimeString() });
-  } catch (error) {
-    next(error);
-  }
+  }, delay);
 });
+
+app.post("/config", async (req, res, next) => {
+  delay = req.body.delay
+  res.json({ delay })
+})
 
 app.listen(PORT, () => console.log(`Web service listening on port ${PORT}`));

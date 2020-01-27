@@ -7,4 +7,4 @@ COPY . .
 
 EXPOSE 3002
 
-CMD [ "pm2-runtime", "start", "auth-service.js" ]
+CMD [ "pm2-runtime", "start", "index.js" ]

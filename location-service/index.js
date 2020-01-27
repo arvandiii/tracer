@@ -36,8 +36,10 @@ const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax
 app.use(zipkinMiddleware({ tracer }));
 
 app.get("/auth", async (req, res) => {
+  const {pass} = req.body
   try {
     const dateResult = await zipkinAxios.get(`${DATE_SERVICE_ENDPOINT}/time`);
+    if (pass)
     res.json({ isAuthorized: true });
   } catch (error) {
     next(error);
