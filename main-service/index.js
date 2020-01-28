@@ -40,21 +40,46 @@ const zipkinAxiosWeather = zipkinInstrumentationAxios(axios, { tracer, serviceNa
 
 let delay = 0
 
-app.get("/", async (req, res) => {
-  await Promise.delay(delay)
-  try {
-    const locationResult = await zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`);
-    const city = locationResult.data.city
-    const weatherResult = await zipkinAxiosWeather.get(`${WEATHER_SERVICE_ENDPOINT}`);
-    const temperature = weatherResult.data.temperature
-    const dateResult = await zipkinAxiosWeather.get(`${DATE_SERVICE_ENDPOINT}`);
-    const time = dateResult.data.time
-    res.json({
-      temperature, city, time
-    });  
-  } catch (error) {
-    next(error)
-  }
+const result = {}
+
+const sendResult = (res) => {
+  Promise.delay(10).then(()=>{
+    console.log(result)
+      if (result.error) {
+        return res.next(error)
+      } else if (result.city && result.temperature && result.time) {
+        Promise.delay(delay).then(()=>{
+          return res.send(result)
+        })
+      } else {
+        sendResult(res)
+      }
+  })
+}
+
+app.get("/", (req, res) => {
+  zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`).then((response) => {
+    console.log('inja 0', response)
+    result.city = response.data.city
+  }).catch(error => {
+    console.log(error)
+    result.error = error
+  })
+  zipkinAxiosWeather.get(`${WEATHER_SERVICE_ENDPOINT}`).then((response) => {
+    console.log('inja 1', response)
+    result.temperature = response.data.temperature
+  }).catch(error => {
+    console.log(error)
+    result.error = error
+  })
+  zipkinAxiosWeather.get(`${DATE_SERVICE_ENDPOINT}`).then((response) => {
+    console.log('inja 2', response)
+    result.time = response.data.time
+  }).catch(error => {
+    console.log(error)
+    result.error = error
+  })
+  sendResult(res)
 });
 
 app.post("/config", async (req, res) => {

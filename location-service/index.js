@@ -29,7 +29,7 @@ app.use(zipkinMiddleware({ tracer }));
 let delay = 0
 
 app.get("/", async (req, res) => {
-  await Promise.delay(delay)
+  // await Promise.delay(delay)
   res.json({
     city: "Tehran"
   });

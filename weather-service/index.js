@@ -38,7 +38,7 @@ const zipkinAxiosWeather = zipkinInstrumentationAxios(axios, { tracer, serviceNa
 let delay = 0
 
 app.get("/", async (req, res) => {
-  await Promise.delay(delay)
+  // await Promise.delay(delay)
   try {
     const locationResult = await zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`);
     const city = locationResult.data.city
