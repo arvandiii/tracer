@@ -15,6 +15,8 @@ output: {date, weather, location}
 type: POST
 input: {delay}
 output: {delay}
+## example
+curl -d "delay=4000" -X POST http://localhost:3000/config
 
 # date-service
 http://localhost:3001

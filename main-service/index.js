@@ -1,6 +1,6 @@
 const express = require("express");
 const Promise = require("bluebird")
-
+const bodyParser = require('body-parser')
 // Import axios and axios instrumentation
 const axios = require("axios");
 const zipkinInstrumentationAxios = require("zipkin-instrumentation-axios");
@@ -30,7 +30,12 @@ const tracer = new Tracer({
 });
 
 const app = express();
-
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
 
@@ -38,53 +43,62 @@ app.use(zipkinMiddleware({ tracer }));
 const zipkinAxiosLocation = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax-${SERVICE_NAME}-location-service` });
 const zipkinAxiosWeather = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax-${SERVICE_NAME}-weather-service` });
 
-let delay = 0
+const config = { delay: 0 }
 
-const result = {}
-
-const sendResult = (res) => {
-  Promise.delay(10).then(()=>{
-    console.log(result)
-      if (result.error) {
-        return res.next(error)
-      } else if (result.city && result.temperature && result.time) {
-        Promise.delay(delay).then(()=>{
-          return res.send(result)
-        })
-      } else {
-        sendResult(res)
-      }
+const checkResult = (result) => {
+  console.log('omade injaaaaaaa', result)
+  return new Promise((resolve) => {
+    if (result.error || (result.city && result.temperature && result.time)) {
+      return resolve()
+    }
+    return Promise.delay(10).then(() => {
+      return checkResult(result).then(() => { resolve() })
+    })
   })
 }
 
 app.get("/", (req, res) => {
+  const result = {}
+
   zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`).then((response) => {
-    console.log('inja 0', response)
+    console.log('inja 0', response.data)
     result.city = response.data.city
   }).catch(error => {
-    console.log(error)
+    console.log('inja 00', error)
     result.error = error
   })
   zipkinAxiosWeather.get(`${WEATHER_SERVICE_ENDPOINT}`).then((response) => {
-    console.log('inja 1', response)
+    console.log('inja 1', response.data)
     result.temperature = response.data.temperature
   }).catch(error => {
-    console.log(error)
+    console.log('inja 11', error)
     result.error = error
   })
   zipkinAxiosWeather.get(`${DATE_SERVICE_ENDPOINT}`).then((response) => {
-    console.log('inja 2', response)
+    console.log('inja 2', response.data)
     result.time = response.data.time
   }).catch(error => {
-    console.log(error)
+    console.log('inja 22', error)
     result.error = error
   })
-  sendResult(res)
+  checkResult(result).then(() => {
+    console.log('omade inja', config.delay)
+    if (result.error) {
+      return res.next(error)
+    } else {
+      Promise.delay(config.delay).then(() => {
+        return res.send(result)
+      })
+    }
+  })
 });
 
-app.post("/config", async (req, res) => {
-  delay = req.body.delay
-  res.json({ delay })
+app.post("/config", (req, res) => {
+  config.delay = parseInt(req.body.delay) 
+  console.log(req.body)
+  console.log(config.delay)
+  res.json({ delay: config.delay })
 })
 
 app.listen(PORT, () => console.log(`main service listening on port ${PORT}`));
+

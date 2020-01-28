@@ -27,6 +27,12 @@ const tracer = new Tracer({
 });
 
 const app = express();
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));

@@ -22,6 +22,12 @@ const tracer = new Tracer({
   localServiceName: SERVICE_NAME,
 });
 const app = express();
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
