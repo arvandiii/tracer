@@ -1,4 +1,5 @@
 const express = require("express");
+const Promise = require("bluebird")
 
 // Import axios and axios instrumentation
 const axios = require("axios");
@@ -10,8 +11,9 @@ const { HttpLogger } = require("zipkin-transport-http");
 const zipkinMiddleware = require("zipkin-instrumentation-express").expressMiddleware;
 
 const ZIPKIN_ENDPOINT = process.env.ZIPKIN_ENDPOINT;
+const LOCATION_SERVICE_ENDPOINT = process.env.LOCATION_SERVICE_ENDPOINT;
+const WEATHER_SERVICE_ENDPOINT = process.env.WEATHER_SERVICE_ENDPOINT;
 const DATE_SERVICE_ENDPOINT = process.env.DATE_SERVICE_ENDPOINT;
-const AUTH_SERVICE_ENDPOINT = process.env.AUTH_SERVICE_ENDPOINT;
 const SERVICE_NAME = process.env.SERVICE_NAME;
 const PORT = process.env.PORT;
 
@@ -27,35 +29,37 @@ const tracer = new Tracer({
   localServiceName: SERVICE_NAME,
 });
 
-let delay = 100
-
 const app = express();
 
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
 
 // Add axios instrumentation
-const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: `axios-client-${SERVICE_NAME}` });
+const zipkinAxiosLocation = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax-${SERVICE_NAME}-location-service` });
+const zipkinAxiosWeather = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax-${SERVICE_NAME}-weather-service` });
 
-app.post("/api",  (req, res, next) => {
-  setTimeout(async function () {
-    const { pass } = req.body
-    try {
-      const authResult = await zipkinAxios.post(`${AUTH_SERVICE_ENDPOINT}/auth`, { pass });
-      if (!authResult.data.isAuthorized) {
-        throw new Error("NOT_AUTHORIZED")
-      }
-      const result = await zipkinAxios.get(`${DATE_SERVICE_ENDPOINT}/time`);
-      res.json({ delay, date: result.data.currentDate });
-    } catch (error) {
-      next(error);
-    }
-  }, delay);
+let delay = 0
+
+app.get("/", async (req, res) => {
+  await Promise.delay(delay)
+  try {
+    const locationResult = await zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`);
+    const city = locationResult.data.city
+    const weatherResult = await zipkinAxiosWeather.get(`${WEATHER_SERVICE_ENDPOINT}`);
+    const temperature = weatherResult.data.temperature
+    const dateResult = await zipkinAxiosWeather.get(`${DATE_SERVICE_ENDPOINT}`);
+    const time = dateResult.data.time
+    res.json({
+      temperature, city, time
+    });  
+  } catch (error) {
+    next(error)
+  }
 });
 
-app.post("/config", async (req, res, next) => {
+app.post("/config", async (req, res) => {
   delay = req.body.delay
   res.json({ delay })
 })
 
-app.listen(PORT, () => console.log(`Web service listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`main service listening on port ${PORT}`));

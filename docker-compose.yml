@@ -20,6 +20,7 @@ services:
 
   date-service:
     build: ./date-service
+    container_name: date-service
     ports:
       - "3001:3001"
     depends_on:
@@ -29,30 +30,46 @@ services:
       - SERVICE_NAME=date-service
       - PORT=3001
 
-  auth-service:
-    build: ./auth-service
+  location-service:
+    build: ./location-service
+    container_name: location-service
     ports:
       - "3002:3002"
     depends_on:
       - zipkin
-      - date-service
     environment:
       - ZIPKIN_ENDPOINT=http://zipkin:9411
-      - SERVICE_NAME=auth-service
-      - DATE_SERVICE_ENDPOINT=http://date-service:3001
+      - SERVICE_NAME=location-service
       - PORT=3002
+    
+  weather-service:
+    build: ./weather-service
+    container_name: weather-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - zipkin
+      - location-service
+    environment:
+      - ZIPKIN_ENDPOINT=http://zipkin:9411
+      - LOCATION_SERVICE_ENDPOINT=http://location-service:3002
+      - SERVICE_NAME=weather-service
+      - PORT=3003
 
   main-service:
     build: ./main-service
+    container_name: main-service
     ports:
       - "3000:3000"
     depends_on:
-      - date-service
       - zipkin
-      - auth-service
+      - date-service
+      - location-service
+      - weather-service
     environment:
       - ZIPKIN_ENDPOINT=http://zipkin:9411
       - DATE_SERVICE_ENDPOINT=http://date-service:3001
-      - AUTH_SERVICE_ENDPOINT=http://auth-service:3002
+      - LOCATION_SERVICE_ENDPOINT=http://location-service:3002
+      - WEATHER_SERVICE_ENDPOINT=http://weather-service:3003
       - SERVICE_NAME=main-service
       - PORT=3000

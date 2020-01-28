@@ -1,8 +1,5 @@
 const express = require("express");
-
-// Import axios and axios instrumentation
-const axios = require("axios");
-const zipkinInstrumentationAxios = require("zipkin-instrumentation-axios");
+const Promise = require("bluebird");
 
 // Import zipkin stuff
 const { Tracer, ExplicitContext, BatchRecorder, jsonEncoder } = require("zipkin");
@@ -10,8 +7,6 @@ const { HttpLogger } = require("zipkin-transport-http");
 const zipkinMiddleware = require("zipkin-instrumentation-express").expressMiddleware;
 
 const ZIPKIN_ENDPOINT = process.env.ZIPKIN_ENDPOINT;
-const DATE_SERVICE_ENDPOINT = process.env.DATE_SERVICE_ENDPOINT;
-const AUTH_SERVICE_ENDPOINT = process.env.AUTH_SERVICE_ENDPOINT;
 const SERVICE_NAME = process.env.SERVICE_NAME;
 const PORT = process.env.PORT;
 
@@ -28,22 +23,21 @@ const tracer = new Tracer({
 });
 const app = express();
 
-// Add axios instrumentation
-const zipkinAxios = zipkinInstrumentationAxios(axios, { tracer, serviceName: `axios-client-${SERVICE_NAME}` });
-
-
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
 
-app.get("/auth", async (req, res) => {
-  const {pass} = req.body
-  try {
-    const dateResult = await zipkinAxios.get(`${DATE_SERVICE_ENDPOINT}/time`);
-    if (pass)
-    res.json({ isAuthorized: true });
-  } catch (error) {
-    next(error);
-  }
+let delay = 0
+
+app.get("/", async (req, res) => {
+  await Promise.delay(delay)
+  res.json({
+    city: "Tehran"
+  });
 });
 
-app.listen(PORT, () => console.log(`Date service listening on port ${PORT}`));
+app.post("/config", async (req, res) => {
+  delay = req.body.delay
+  res.json({ delay })
+})
+
+app.listen(PORT, () => console.log(`location service listening on port ${PORT}`));

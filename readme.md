@@ -1,5 +1,7 @@
-# run docker
-docker-compose up --build -d
+
+# getting started
+chmod 755 run.sh
+./run.sh
 
 # zipkin
 http://localhost:9411

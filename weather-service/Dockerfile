@@ -5,6 +5,6 @@ RUN npm install
 RUN npm install pm2@latest -g
 COPY . .
 
-EXPOSE 3001
+EXPOSE 3003
 
 CMD [ "pm2-runtime", "start", "index.js" ]

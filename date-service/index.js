@@ -1,4 +1,5 @@
 const express = require("express");
+const Promise = require("bluebird");
 
 // Import zipkin stuff
 const { Tracer, ExplicitContext, BatchRecorder, jsonEncoder } = require("zipkin");
@@ -6,8 +7,6 @@ const { HttpLogger } = require("zipkin-transport-http");
 const zipkinMiddleware = require("zipkin-instrumentation-express").expressMiddleware;
 
 const ZIPKIN_ENDPOINT = process.env.ZIPKIN_ENDPOINT;
-const DATE_SERVICE_ENDPOINT = process.env.DATE_SERVICE_ENDPOINT;
-const AUTH_SERVICE_ENDPOINT = process.env.AUTH_SERVICE_ENDPOINT;
 const SERVICE_NAME = process.env.SERVICE_NAME;
 const PORT = process.env.PORT;
 
@@ -27,10 +26,18 @@ const app = express();
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
 
-app.get("/time", (req, res) => {
+let delay = 0
+
+app.get("/", async (req, res) => {
+  await Promise.delay(delay)
   res.json({
-    currentDate: new Date().getTime().toLocaleTimeString()
+    time: new Date().getTime()
   });
 });
+
+app.post("/config", async (req, res) => {
+  delay = req.body.delay
+  res.json({ delay })
+})
 
 app.listen(PORT, () => console.log(`Date service listening on port ${PORT}`));
