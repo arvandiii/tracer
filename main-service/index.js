@@ -95,8 +95,6 @@ app.get("/", (req, res) => {
 
 app.post("/config", (req, res) => {
   config.delay = parseInt(req.body.delay) 
-  console.log(req.body)
-  console.log(config.delay)
   res.json({ delay: config.delay })
 })
 

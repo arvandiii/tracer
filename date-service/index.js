@@ -1,5 +1,6 @@
 const express = require("express");
 const Promise = require("bluebird");
+const bodyParser = require('body-parser')
 
 // Import zipkin stuff
 const { Tracer, ExplicitContext, BatchRecorder, jsonEncoder } = require("zipkin");
@@ -32,18 +33,19 @@ app.use(
 // Add zipkin express middleware
 app.use(zipkinMiddleware({ tracer }));
 
-let delay = 0
+const config = { delay: 0 }
 
 app.get("/", async (req, res) => {
-  // await Promise.delay(delay)
-  res.json({
-    time: new Date().getTime()
-  });
+  Promise.delay(config.delay).then(() => {
+    return res.json({
+      time: new Date().getTime()
+    });
+  })
 });
 
-app.post("/config", async (req, res) => {
-  delay = req.body.delay
-  res.json({ delay })
+app.post("/config", (req, res) => {
+  config.delay = parseInt(req.body.delay)
+  res.json({ delay: config.delay })
 })
 
 app.listen(PORT, () => console.log(`Date service listening on port ${PORT}`));

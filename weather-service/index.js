@@ -1,5 +1,7 @@
 const express = require("express");
 const Promise = require("bluebird")
+const bodyParser = require('body-parser')
+
 // Import axios and axios instrumentation
 const axios = require("axios");
 const zipkinInstrumentationAxios = require("zipkin-instrumentation-axios");
@@ -41,26 +43,53 @@ app.use(zipkinMiddleware({ tracer }));
 const zipkinAxiosLocation = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax-${SERVICE_NAME}-location-service` });
 const zipkinAxiosWeather = zipkinInstrumentationAxios(axios, { tracer, serviceName: `ax-${SERVICE_NAME}-weather-api` });
 
-let delay = 0
+const config = { delay: 0 }
+
+const checkResult = (result) => {
+  console.log('omade injaaaaaaa', result)
+  return new Promise((resolve) => {
+    if (result.error || (result.temperature)) {
+      return resolve()
+    }
+    return Promise.delay(10).then(() => {
+      return checkResult(result).then(() => { resolve() })
+    })
+  })
+}
 
 app.get("/", async (req, res) => {
-  // await Promise.delay(delay)
-  try {
-    const locationResult = await zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`);
-    const city = locationResult.data.city
-    const weatherResult = await zipkinAxiosWeather.get(`http://api.weatherstack.com/current?access_key=818bacc53acaaf66eaeaff671349f901&query=${city}`)
-    const temperature = weatherResult.data.current.temperature
-    res.json({
-      temperature,
-    });
-  } catch (error) {
-    next(error)
+  const result = {}
+
+  zipkinAxiosLocation.get(`${LOCATION_SERVICE_ENDPOINT}`).then((response) => {
+    console.log('inja 0', response.data)
+    const city = response.data.city
+    result.temperature = 7
+    // zipkinAxiosWeather.get(`http://api.weatherstack.com/current?access_key=818bacc53acaaf66eaeaff671349f901&query=${city}`).then((response) => {
+    //   console.log('inja 1', response.data)
+    //   result.temperature = response.data.current.temperature
+    // }).catch(error => {
+    //   console.log('inja 11', error)
+    //   result.error = error
+    // })
+  }).catch(error => {
+    console.log('inja 00', error)
+    result.error = error
+  })
+  await checkResult(result)
+  console.log('omade inja', config.delay)
+  if (result.error) {
+    return res.next(error)
+  } else {
+    Promise.delay(config.delay).then(() => {
+      return res.send(result)
+    })
   }
+
 });
 
-app.post("/config", async (req, res) => {
-  delay = req.body.delay
-  res.json({ delay })
+app.post("/config", (req, res) => {
+  config.delay = parseInt(req.body.delay)
+  res.json({ delay: config.delay })
 })
 
 app.listen(PORT, () => console.log(`weather service listening on port ${PORT}`));
